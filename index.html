@@ -6,51 +6,87 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      text-align: center;
-      margin: 50px;
+      margin: 30px;
       background-color: #f9f9f9;
-    }
-    h1 {
       color: #333;
     }
-    a {
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    p, h2 {
+      text-align: center;
+    }
+    a.btn {
       display: inline-block;
-      margin-top: 20px;
-      padding: 12px 20px;
+      margin: 10px auto;
+      padding: 10px 18px;
       background-color: #0088cc;
-      color: white;
+      color: #fff;
       text-decoration: none;
       border-radius: 6px;
       font-weight: bold;
+      transition: background-color 0.2s ease;
     }
-    a:hover {
+    a.btn:hover {
       background-color: #006699;
     }
-    table {
+    .table-wrapper {
       margin: 30px auto;
+      max-width: 95%;
+      overflow-x: auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      background: white;
+      padding: 10px;
+    }
+    table {
       border-collapse: collapse;
-      width: 90%;
-      max-width: 1000px;
+      width: 100%;
+      font-size: 14px;
     }
     th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
+      border: 1px solid #ddd;
+      padding: 8px 12px;
       text-align: left;
     }
     th {
-      background-color: #f0f0f0;
+      background-color: #0088cc;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f8fc;
+    }
+    tr:hover {
+      background-color: #e6f2f8;
+    }
+    .link-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      margin: 2px;
+      background: #0088cc;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+    .link-btn:hover {
+      background: #006699;
     }
   </style>
-  <!-- SheetJS (XLSX.js) -->
+  <!-- SheetJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <h1>Welkom op de website van Databets 🎉</h1>
   <p>Klik hieronder om naar ons Telegram-kanaal te gaan:</p>
-  <a href="https://t.me/Beterbetten" target="_blank">👉 Naar Telegram</a>
+  <p><a href="https://t.me/Beterbetten" class="btn" target="_blank">👉 Naar Telegram</a></p>
 
   <h2>📊 Advies-tabblad</h2>
-  <div id="excel-data">Bezig met laden...</div>
+  <div class="table-wrapper" id="excel-data">Bezig met laden...</div>
 
   <script>
     async function loadExcel() {
@@ -59,11 +95,27 @@
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: "array" });
 
-        // Neem het eerste werkblad
+        // Eerste sheet
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const html = XLSX.utils.sheet_to_html(sheet, { id: "advies-table", editable: false });
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+        // Bouw handmatig een mooiere tabel
+        let html = "<table><thead><tr>";
+        rows[0].forEach(col => html += `<th>${col}</th>`);
+        html += "</tr></thead><tbody>";
+        rows.slice(1).forEach(r => {
+          html += "<tr>";
+          r.forEach((cell, idx) => {
+            if (String(cell).startsWith("http")) {
+              html += `<td><a class="link-btn" href="${cell}" target="_blank">Open link</a></td>`;
+            } else {
+              html += `<td>${cell ?? ""}</td>`;
+            }
+          });
+          html += "</tr>";
+        });
+        html += "</tbody></table>";
         document.getElementById("excel-data").innerHTML = html;
       } catch (err) {
         document.getElementById("excel-data").innerText = "❌ Fout bij laden van Excel: " + err;
