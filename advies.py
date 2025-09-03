@@ -42,6 +42,6 @@ else:
 
 # === Stap 5: Push naar GitHub ===
 origin = repo.remote(name="origin")
-origin.set_url(GITHUB_URL)  # Token direct in remote
 origin.push(refspec="HEAD:refs/heads/main")
+
 print("🚀 Tabblad 'Advies' succesvol naar GitHub gepusht!")
