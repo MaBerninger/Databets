@@ -26,11 +26,50 @@
     a:hover {
       background-color: #006699;
     }
+    table {
+      margin: 30px auto;
+      border-collapse: collapse;
+      width: 90%;
+      max-width: 1000px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
   </style>
+  <!-- SheetJS (XLSX.js) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
   <h1>Welkom op de website van Databets 🎉</h1>
   <p>Klik hieronder om naar ons Telegram-kanaal te gaan:</p>
   <a href="https://t.me/Beterbetten" target="_blank">👉 Naar Telegram</a>
+
+  <h2>📊 Advies-tabblad</h2>
+  <div id="excel-data">Bezig met laden...</div>
+
+  <script>
+    async function loadExcel() {
+      try {
+        const response = await fetch("data/Advies.xlsx");
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+
+        // Neem het eerste werkblad
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const html = XLSX.utils.sheet_to_html(sheet, { id: "advies-table", editable: false });
+
+        document.getElementById("excel-data").innerHTML = html;
+      } catch (err) {
+        document.getElementById("excel-data").innerText = "❌ Fout bij laden van Excel: " + err;
+      }
+    }
+    loadExcel();
+  </script>
 </body>
 </html>
