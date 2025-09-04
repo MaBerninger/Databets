@@ -1,194 +1,127 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Databets</title>
-
-  <!-- SheetJS om Excel in de browser te lezen -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
+  <meta charset="UTF-8">
+  <title>Welkom op Databets</title>
   <style>
-    :root {
-      --primary:#0b7a33;
-      --primary-700:#0a5f29;
-      --brand:#0088cc;
-      --bg:#f7f7f9;
-      --ink:#1f2937;
-      --table-head:#0ea5e9;
-    }
-    * { box-sizing: border-box; }
     body {
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color:var(--ink);
-      background:var(--bg);
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f9f9f9;
+      color: #333;
     }
-    .wrap { max-width:1200px; margin:0 auto; padding:24px; }
-    header { text-align:center; margin:20px 0 16px; }
-    .topbar{display:flex;align-items:center;gap:14px;justify-content:center;margin:8px 0 20px}
-    .logo{height:56px;width:auto;border-radius:12px}
-    h1 { font-size:clamp(24px, 2.5vw, 36px); margin:10px 0 6px; }
-    p.lead { margin:0 0 14px; color:#6b7280; }
-    .btn {
-      display:inline-block; padding:12px 20px; border-radius:10px;
-      text-decoration:none; color:#fff; background:var(--brand); font-weight:700;
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
     }
-    .btn:hover { background:#0072a9; }
-    .pill {
-      display:inline-flex; align-items:center; gap:8px;
-      background:#e6f4ea; color:var(--primary);
-      border:1px solid #b7e0c3; border-radius:999px;
-      padding:6px 12px; font-weight:600; font-size:0.95rem;
+    p, h2 {
+      text-align: center;
     }
-    .dot{height:10px;width:10px;background:#22c55e;border-radius:50%}
-    .section-title {
-      display:flex; align-items:center; gap:10px; margin:26px 0 10px;
-      font-size:1.15rem; font-weight:800;
+    a.btn {
+      display: inline-block;
+      margin: 10px auto;
+      padding: 10px 18px;
+      background-color: #0088cc;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background-color 0.2s ease;
     }
-    .card {
-      background:#fff; border-radius:16px; box-shadow:0 6px 18px rgba(0,0,0,.06);
-      padding:16px;
+    a.btn:hover {
+      background-color: #006699;
     }
-    .toolbar { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; margin:8px 0 14px; }
-    .toolbar .right { display:flex; gap:10px; align-items:center; }
-    .btn-outline {
-      border:1px solid #cbd5e1; color:#334155; background:#fff; padding:10px 14px; border-radius:10px; text-decoration:none; font-weight:600;
+    .table-wrapper {
+      margin: 30px auto;
+      max-width: 95%;
+      overflow-x: auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      background: white;
+      padding: 10px;
     }
-    .btn-outline:hover { border-color:#94a3b8; }
     table {
-      width:100%; border-collapse:collapse; overflow:auto; font-size:14px;
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
     }
-    thead th {
-      position:sticky; top:0; z-index:1;
-      background:var(--table-head); color:#fff; text-align:left;
-      padding:10px; white-space:nowrap;
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      text-align: left;
     }
-    tbody td {
-      border-top:1px solid #e5e7eb; padding:10px; vertical-align:top;
+    th {
+      background-color: #0088cc;
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
-    tbody tr:nth-child(odd){ background:#fafafa; }
-    .scroll { overflow:auto; border-radius:12px; border:1px solid #e5e7eb; }
-    footer { text-align:center; color:#9ca3af; font-size:13px; margin:28px 0 6px; }
+    tr:nth-child(even) {
+      background-color: #f2f8fc;
+    }
+    tr:hover {
+      background-color: #e6f2f8;
+    }
+    .link-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      margin: 2px;
+      background: #0088cc;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+    .link-btn:hover {
+      background: #006699;
+    }
   </style>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <!-- Logo uit je repo-root -->
-      <img src="./signal-2025-09-03-161458_002.jpeg" class="logo" alt="DataBets logo">
-      <span id="last-update" class="pill"><span class="dot"></span> Laatste update: laden…</span>
-    </div>
+  <h1>Welkom op de website van Databets 🎉</h1>
+  <p>Klik hieronder om naar ons Telegram-kanaal te gaan:</p>
+  <p><a href="https://t.me/Beterbetten" class="btn" target="_blank">👉 Naar Telegram</a></p>
 
-    <header>
-      <h1>Welkom op de website van Databets 🎉</h1>
-      <p class="lead">Klik hieronder om naar ons Telegram-kanaal te gaan:</p>
-      <p><a class="btn" href="https://t.me/Beterbetten" target="_blank" rel="noopener">👉 Naar Telegram</a></p>
-    </header>
-
-    <h2 class="section-title">📊 Advies-tabblad</h2>
-
-    <div class="card">
-      <div class="toolbar">
-        <div><strong>Bron:</strong> <code>data/Advies.xlsx</code> (tabblad <code>advies</code>)</div>
-        <div class="right">
-          <a class="btn-outline" href="data/Advies.xlsx" download>⬇️ Download Advies.xlsx</a>
-          <button id="reload" class="btn-outline" type="button">🔁 Vernieuwen</button>
-        </div>
-      </div>
-
-      <div class="scroll">
-        <table id="advies-table">
-          <thead id="thead"></thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <footer>© <span id="yr"></span> Databets</footer>
-  </div>
+  <h2>📊 Advies-tabblad</h2>
+  <div class="table-wrapper" id="excel-data">Bezig met laden...</div>
 
   <script>
-    const EXCEL_URL = 'data/Advies.xlsx';        // pad naar jouw Excel
-    const SHEET_NAME = 'advies';                 // exacte sheetnaam
-    const lastUpdateEl = document.getElementById('last-update');
-    const theadEl = document.getElementById('thead');
-    const tbodyEl = document.getElementById('tbody');
-    const reloadBtn = document.getElementById('reload');
-    document.getElementById('yr').textContent = new Date().getFullYear();
-
-    async function fetchExcel(url) {
-      // cache omzeilen zodat nieuwe push meteen zichtbaar is
-      const resp = await fetch(url + '?v=' + Date.now(), { cache: 'no-store' });
-      if (!resp.ok) throw new Error('Kan Excel niet laden: ' + resp.status);
-      return await resp.arrayBuffer();
-    }
-
-    function sheetTo2DArray(ws) {
-      const range = XLSX.utils.decode_range(ws['!ref']);
-      const rows = [];
-      for (let R = range.s.r; R <= range.e.r; ++R) {
-        const row = [];
-        for (let C = range.s.c; C <= range.e.c; ++C) {
-          const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
-          const cell = ws[cellAddress];
-          row.push(cell ? cell.v : '');
-        }
-        rows.push(row);
-      }
-      return rows;
-    }
-
-    function renderTable(data) {
-      if (!data || !data.length) return;
-
-      // eerste rij = headers
-      const headers = data[0].map(h => String(h || '').trim());
-      const rows = data.slice(1);
-
-      // thead
-      theadEl.innerHTML = '<tr>' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
-
-      // tbody
-      const htmlRows = rows.map(r => {
-        return '<tr>' + r.map(v => `<td>${escapeHtml(v)}</td>`).join('') + '</tr>';
-      }).join('');
-      tbodyEl.innerHTML = htmlRows;
-    }
-
-    function escapeHtml(v) {
-      return String(v ?? '').replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-      }[m]));
-    }
-
-    async function loadAdvies() {
+    async function loadExcel() {
       try {
-        const buf = await fetchExcel(EXCEL_URL);
-        const wb = XLSX.read(buf, { type: 'array' });
+        const response = await fetch("data/Advies.xlsx");
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
 
-        const sheet = wb.SheetNames.includes(SHEET_NAME) ? SHEET_NAME : wb.SheetNames[0];
-        const ws = wb.Sheets[sheet];
+        // Eerste sheet
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // A1 als "laatste update"
-        const a1 = (ws['A1'] && ws['A1'].v) ? ws['A1'].v : null;
-        lastUpdateEl.innerHTML =
-          `<span class="dot"></span> Laatste update: ${a1 ? escapeHtml(a1) : 'onbekend'}`;
-
-        // Hele sheet als tabel tonen
-        const data = sheetTo2DArray(ws);
-        renderTable(data);
-
+        // Bouw handmatig een mooiere tabel
+        let html = "<table><thead><tr>";
+        rows[0].forEach(col => html += `<th>${col}</th>`);
+        html += "</tr></thead><tbody>";
+        rows.slice(1).forEach(r => {
+          html += "<tr>";
+          r.forEach((cell, idx) => {
+            if (String(cell).startsWith("http")) {
+              html += `<td><a class="link-btn" href="${cell}" target="_blank">Open link</a></td>`;
+            } else {
+              html += `<td>${cell ?? ""}</td>`;
+            }
+          });
+          html += "</tr>";
+        });
+        html += "</tbody></table>";
+        document.getElementById("excel-data").innerHTML = html;
       } catch (err) {
-        console.error(err);
-        lastUpdateEl.textContent = 'Laatste update: fout bij laden';
-        theadEl.innerHTML = '';
-        tbodyEl.innerHTML = '<tr><td>Kon Advies.xlsx niet laden.</td></tr>';
+        document.getElementById("excel-data").innerText = "❌ Fout bij laden van Excel: " + err;
       }
     }
-
-    reloadBtn.addEventListener('click', loadAdvies);
-    loadAdvies();
+    loadExcel();
   </script>
 </body>
 </html>
