@@ -68,6 +68,67 @@
       border: 1px solid #d1e8ff;
     }
 
+    /* FILTER CONTROLS */
+    .controls {
+      max-width: 95%;
+      margin: 12px auto 8px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+    }
+    .controls h3 {
+      margin: 4px 0 10px;
+      font-size: 16px;
+    }
+    .controls .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-height: 180px;
+      overflow: auto;
+      padding: 6px;
+      border: 1px dashed #e5e7eb;
+      border-radius: 10px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #dbe3ea;
+      background: #f7fbff;
+      font-size: 13px;
+    }
+    .chip input { transform: translateY(1px); }
+    .muted {
+      color: #637;
+      opacity: .8;
+      font-size: 13px;
+    }
+    .search {
+      padding: 8px 10px;
+      border: 1px solid #dbe3ea;
+      border-radius: 10px;
+    }
+    .btn {
+      padding: 8px 10px;
+      border: 1px solid #dbe3ea;
+      border-radius: 10px;
+      background: #f9fbfd;
+      cursor: pointer;
+    }
+    .btn:hover { background: #eef6ff; }
+    .count { font-size: 13px; margin-left: auto; }
+
     /* TABLE */
     .table-wrapper {
       margin: 16px auto;
@@ -127,22 +188,132 @@
   <h2 style="text-align:center; margin-top:8px;">📊 Advies-tabblad</h2>
   <p id="last-update" class="last-update" style="display:none;"></p>
 
+  <!-- FILTERS -->
+  <div class="controls" id="filters" style="display:none;">
+    <h3>Filter op Bookmaker</h3>
+    <div class="row" style="margin-bottom:8px;">
+      <input type="text" id="bmSearch" class="search" placeholder="Zoek bookmaker…" />
+      <button class="btn" id="bmAll">Alles aan</button>
+      <button class="btn" id="bmNone">Alles uit</button>
+      <span class="count" id="bmCount"></span>
+    </div>
+    <div class="chips" id="bmChips" aria-label="Bookmaker selectie"></div>
+    <p class="muted" style="margin-top:8px;">
+      Een rij blijft zichtbaar <strong>alleen als zowel Bookmaker 1 als Bookmaker 2</strong> zijn aangevinkt.
+    </p>
+  </div>
+
   <div class="table-wrapper" id="excel-data">Bezig met laden...</div>
 
   <script>
+    //
+    // Konstanten om kolomnamen voor bookmakers te identificeren
+    const COL_BM1_HEADER = "Bookmaker 1";
+    const COL_BM2_HEADER = "Bookmaker 2";
+
+    let headers = [];
+    let bm1Index = -1, bm2Index = -1;
+
+    // Bouw de filter-UI dynamisch op basis van gevonden bookmakers
+    function buildFilterUI(bookmakers) {
+      const filters = document.getElementById("filters");
+      const chipsWrap = document.getElementById("bmChips");
+      const search = document.getElementById("bmSearch");
+      const btnAll = document.getElementById("bmAll");
+      const btnNone = document.getElementById("bmNone");
+      const count = document.getElementById("bmCount");
+
+      // Maak checkbox chips
+      chipsWrap.innerHTML = "";
+      bookmakers.sort((a,b) => a.localeCompare(b, 'nl', {sensitivity:'base'}))
+        .forEach(name => {
+          const id = "bm-" + name.replace(/[^a-z0-9]+/gi, "_");
+          const chip = document.createElement("label");
+          chip.className = "chip";
+          chip.dataset.label = name.toLowerCase();
+          chip.innerHTML = `<input type="checkbox" checked data-bm value="${name}" id="${id}"><span>${name}</span>`;
+          chipsWrap.appendChild(chip);
+        });
+
+      const updateCount = () => {
+        const total = chipsWrap.querySelectorAll('input[data-bm]').length;
+        const checked = chipsWrap.querySelectorAll('input[data-bm]:checked').length;
+        count.textContent = `${checked}/${total} geselecteerd`;
+      };
+
+      const applySearch = () => {
+        const q = search.value.trim().toLowerCase();
+        chipsWrap.querySelectorAll(".chip").forEach(ch => {
+          const match = ch.dataset.label.includes(q);
+          ch.style.display = match ? "inline-flex" : "none";
+        });
+      };
+
+      const applyFilter = () => {
+        const allowed = new Set(
+          Array.from(chipsWrap.querySelectorAll('input[data-bm]:checked')).map(i => i.value)
+        );
+        const tbody = document.querySelector("#excel-data table tbody");
+        if (!tbody) return;
+        let visible = 0;
+        tbody.querySelectorAll("tr").forEach(tr => {
+          const bm1 = tr.dataset.bm1 || "";
+          const bm2 = tr.dataset.bm2 || "";
+          const ok =
+            (bm1 === "" || allowed.has(bm1)) &&
+            (bm2 === "" || allowed.has(bm2));
+          tr.style.display = ok ? "" : "none";
+          if (ok) visible++;
+        });
+
+        const wrapper = document.getElementById("excel-data");
+        let empty = wrapper.querySelector(".empty");
+        if (!empty) {
+          empty = document.createElement("div");
+          empty.className = "empty";
+          wrapper.appendChild(empty);
+        }
+        empty.textContent = visible === 0 ? "Geen resultaten met deze selectie." : "";
+      };
+
+      // Event listeners
+      chipsWrap.addEventListener("change", () => { updateCount(); applyFilter(); });
+      btnAll.addEventListener("click", () => {
+        chipsWrap.querySelectorAll('input[data-bm]').forEach(i => i.checked = true);
+        updateCount(); applyFilter();
+      });
+      btnNone.addEventListener("click", () => {
+        chipsWrap.querySelectorAll('input[data-bm]').forEach(i => i.checked = false);
+        updateCount(); applyFilter();
+      });
+      search.addEventListener("input", applySearch);
+
+      // Init
+      filters.style.display = "block";
+      updateCount();
+      applyFilter();
+    }
+
     async function loadExcel() {
+      let workbook;
+      // Probeer het Excel-bestand via fetch op te halen
       try {
         const response = await fetch("data/Advies.xlsx", { cache: "no-store" });
         if (!response.ok) throw new Error("HTTP " + response.status);
         const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        workbook = XLSX.read(arrayBuffer, { type: "array" });
+      } catch (fetchErr) {
+        // Als het ophalen van het Excel-bestand mislukt, toon een foutmelding
+        document.getElementById('excel-data').innerText = '❌ Fout bij laden van Excel: ' + fetchErr;
+        return;
+      }
 
         // Pak de eerste sheet
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-        // Detecteer timestamp in A1 (\"Laatst bijgewerkt: ...\")
+        // Detecteer timestamp in A1 ("Laatst bijgewerkt: ...")
         let headerRowIndex = 0;
         const firstCell = rows?.[0]?.[0] ? String(rows[0][0]) : "";
         if (firstCell.toLowerCase().startsWith("laatst bijgewerkt")) {
@@ -152,15 +323,25 @@
           headerRowIndex = 1; // headers staan dan op de tweede rij
         }
 
+        headers = rows[headerRowIndex] || [];
+        bm1Index = headers.findIndex(h => String(h).trim().toLowerCase() === COL_BM1_HEADER.toLowerCase());
+        bm2Index = headers.findIndex(h => String(h).trim().toLowerCase() === COL_BM2_HEADER.toLowerCase());
+
         // Bouw tabel
-        const headers = rows[headerRowIndex] || [];
         let html = "<table><thead><tr>";
         headers.forEach(col => html += `<th>${col ?? ""}</th>`);
         html += "</tr></thead><tbody>";
 
+        const bookmakerSet = new Set();
+
         for (let i = headerRowIndex + 1; i < rows.length; i++) {
           const r = rows[i] || [];
-          html += "<tr>";
+          const bm1 = bm1Index >= 0 ? (r[bm1Index] ?? "").toString() : "";
+          const bm2 = bm2Index >= 0 ? (r[bm2Index] ?? "").toString() : "";
+          if (bm1) bookmakerSet.add(bm1);
+          if (bm2) bookmakerSet.add(bm2);
+
+          html += `<tr data-bm1="${bm1.replace(/"/g,'&quot;')}" data-bm2="${bm2.replace(/"/g,'&quot;')}">`;
           for (let j = 0; j < headers.length; j++) {
             const cell = r[j];
             if (typeof cell === "string" && cell.startsWith("http")) {
@@ -173,10 +354,12 @@
         }
         html += "</tbody></table>";
         document.getElementById("excel-data").innerHTML = html;
-      } catch (err) {
-        document.getElementById("excel-data").innerText = "❌ Fout bij laden van Excel: " + err;
-      }
+
+        // Bouw de filter-UI met gevonden bookmakers
+        buildFilterUI(Array.from(bookmakerSet));
     }
+
+    // Start het laden van de Excel en initialiseer de filters
     loadExcel();
   </script>
 </body>
