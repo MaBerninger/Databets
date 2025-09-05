@@ -57,8 +57,8 @@ def process_file():
 def main():
     while True:
         process_file()
-        print("⏳ Wachten 3 minuten tot volgende run...")
-        time.sleep(180)  # 3 minuten
+        print("⏳ Wachten 2 minuten tot volgende run...")
+        time.sleep(120)  # 2 minuten
 
 if __name__ == "__main__":
     main()
