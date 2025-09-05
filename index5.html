@@ -295,83 +295,69 @@
     }
 
     async function loadExcel() {
-  let workbook;
-  try {
-    const response = await fetch("data/Advies.xlsx", { cache: "no-store" });
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    const arrayBuffer = await response.arrayBuffer();
-    workbook = XLSX.read(arrayBuffer, { type: "array" });
-  } catch (fetchErr) {
-    document.getElementById('excel-data').innerText = '❌ Fout bij laden van Excel: ' + fetchErr;
-    return;
-  }
-
-  // Pak de eerste sheet
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-  // Detecteer timestamp in A1 ("Laatst bijgewerkt: ...")
-  let headerRowIndex = 0;
-  const firstCell = rows?.[0]?.[0] ? String(rows[0][0]) : "";
-  if (firstCell.toLowerCase().startsWith("laatst bijgewerkt")) {
-    const lu = document.getElementById("last-update");
-    lu.textContent = firstCell;
-    lu.style.display = "inline-block";
-    headerRowIndex = 1; // headers staan dan op de tweede rij
-  }
-
-  headers = rows[headerRowIndex] || [];
-  // Zoek alle kolommen waarvan de header het woord “bookmaker” bevat
-  const bmIndices = [];
-  headers.forEach((colName, idx) => {
-    if (colName && colName.toString().toLowerCase().includes('bookmaker')) {
-      bmIndices.push(idx);
-    }
-  });
-  // Bepaal de eerste twee indices (als ze bestaan)
-  bm1Index = bmIndices[0] ?? -1;
-  bm2Index = bmIndices[1] ?? -1;
-
-  // Bouw tabel en verzamel unieke namen uit alle gevonden kolommen
-  let html = "<table><thead><tr>";
-  headers.forEach(col => html += `<th>${col ?? ""}</th>`);
-  html += "</tr></thead><tbody>";
-
-  const bookmakerSet = new Set();
-
-  for (let i = headerRowIndex + 1; i < rows.length; i++) {
-    const r = rows[i] || [];
-    // Haal waarden op uit alle bookmaker-kolommen en voeg toe aan de set
-    const bmNames = [];
-    bmIndices.forEach(index => {
-      const val = (r[index] ?? "").toString().trim();
-      if (val) {
-        bmNames.push(val);
-        bookmakerSet.add(val);
+      let workbook;
+      // Probeer het Excel-bestand via fetch op te halen
+      try {
+        const response = await fetch("data/Advies.xlsx", { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const arrayBuffer = await response.arrayBuffer();
+        workbook = XLSX.read(arrayBuffer, { type: "array" });
+      } catch (fetchErr) {
+        // Als het ophalen van het Excel-bestand mislukt, toon een foutmelding
+        document.getElementById('excel-data').innerText = '❌ Fout bij laden van Excel: ' + fetchErr;
+        return;
       }
-    });
 
-    // Gebruik de eerste twee namen (of lege string) voor data-attributen
-    const bm1 = bmNames[0] ?? "";
-    const bm2 = bmNames[1] ?? "";
-    html += `<tr data-bm1="${bm1.replace(/"/g,'&quot;')}" data-bm2="${bm2.replace(/"/g,'&quot;')}">`;
-    for (let j = 0; j < headers.length; j++) {
-      const cell = r[j];
-      if (typeof cell === "string" && cell.startsWith("http")) {
-        html += `<td><a class="link-btn" href="${cell}" target="_blank" rel="noopener">Open link</a></td>`;
-      } else {
-        html += `<td>${cell ?? ""}</td>`;
-      }
+        // Pak de eerste sheet
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        // Detecteer timestamp in A1 ("Laatst bijgewerkt: ...")
+        let headerRowIndex = 0;
+        const firstCell = rows?.[0]?.[0] ? String(rows[0][0]) : "";
+        if (firstCell.toLowerCase().startsWith("laatst bijgewerkt")) {
+          const lu = document.getElementById("last-update");
+          lu.textContent = firstCell;
+          lu.style.display = "inline-block";
+          headerRowIndex = 1; // headers staan dan op de tweede rij
+        }
+
+        headers = rows[headerRowIndex] || [];
+        bm1Index = headers.findIndex(h => String(h).trim().toLowerCase() === COL_BM1_HEADER.toLowerCase());
+        bm2Index = headers.findIndex(h => String(h).trim().toLowerCase() === COL_BM2_HEADER.toLowerCase());
+
+        // Bouw tabel
+        let html = "<table><thead><tr>";
+        headers.forEach(col => html += `<th>${col ?? ""}</th>`);
+        html += "</tr></thead><tbody>";
+
+        const bookmakerSet = new Set();
+
+        for (let i = headerRowIndex + 1; i < rows.length; i++) {
+          const r = rows[i] || [];
+          const bm1 = bm1Index >= 0 ? (r[bm1Index] ?? "").toString() : "";
+          const bm2 = bm2Index >= 0 ? (r[bm2Index] ?? "").toString() : "";
+          if (bm1) bookmakerSet.add(bm1);
+          if (bm2) bookmakerSet.add(bm2);
+
+          html += `<tr data-bm1="${bm1.replace(/"/g,'&quot;')}" data-bm2="${bm2.replace(/"/g,'&quot;')}">`;
+          for (let j = 0; j < headers.length; j++) {
+            const cell = r[j];
+            if (typeof cell === "string" && cell.startsWith("http")) {
+              html += `<td><a class="link-btn" href="${cell}" target="_blank" rel="noopener">Open link</a></td>`;
+            } else {
+              html += `<td>${cell ?? ""}</td>`;
+            }
+          }
+          html += "</tr>";
+        }
+        html += "</tbody></table>";
+        document.getElementById("excel-data").innerHTML = html;
+
+        // Bouw de filter-UI met gevonden bookmakers
+        buildFilterUI(Array.from(bookmakerSet));
     }
-    html += "</tr>";
-  }
-  html += "</tbody></table>";
-  document.getElementById("excel-data").innerHTML = html;
-
-  // Bouw de filter-UI met alle unieke bookmakers
-  buildFilterUI(Array.from(bookmakerSet));
-}
 
     // Start het laden van de Excel en initialiseer de filters
     loadExcel();
