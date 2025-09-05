@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Welkom op Databets</title>
+  <style>
+    :root {
+      --brand: #0088cc;
+      --bg: #f9f9f9;
+      --ink: #333;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: var(--bg);
+      color: var(--ink);
+    }
+
+    /* HERO + LOGO */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin: 10px auto 24px;
+      text-align: center;
+    }
+    .hero .logo {
+      width: clamp(180px, 30vw, 360px);
+      height: auto;
+      border-radius: 16px;
+      filter: drop-shadow(0 8px 18px rgba(0,0,0,0.12));
+    }
+    h1 {
+      margin: 6px 0 0 0;
+      line-height: 1.2;
+    }
+    p {
+      margin: 6px 0;
+    }
+
+    /* BUTTONS */
+    a.btn {
+      display: inline-block;
+      margin: 10px auto 0;
+      padding: 10px 18px;
+      background-color: var(--brand);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: bold;
+      transition: transform 0.08s ease, background-color 0.2s ease;
+    }
+    a.btn:hover { background-color: #006699; transform: translateY(-1px); }
+
+    /* LAST UPDATE BADGE */
+    .last-update {
+      text-align: center;
+      margin: 6px auto 16px;
+      font-size: 14px;
+      color: #246;
+      background: #eaf5ff;
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #d1e8ff;
+    }
+
+    /* TABLE */
+    .table-wrapper {
+      margin: 16px auto;
+      max-width: 95%;
+      overflow-x: auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      background: white;
+      padding: 10px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: var(--brand);
+      color: white;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tr:nth-child(even) { background-color: #f2f8fc; }
+    tr:hover { background-color: #e6f2f8; }
+    .link-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      margin: 2px;
+      background: var(--brand);
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .link-btn:hover { background: #006699; }
+  </style>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- HERO met groot logo -->
+  <div class="hero">
+    <!-- Het logo staat in dezelfde map als index.html -->
+    <img src="signal-2025-09-03-161458_002.jpeg" alt="DataBets logo" class="logo" loading="eager" decoding="async" />
+    <h1>Welkom op de website van Databets 🎉</h1>
+    <p>Klik hieronder om naar ons Telegram-kanaal te gaan:</p>
+    <p><a href="https://t.me/Beterbetten" class="btn" target="_blank" rel="noopener">👉 Naar Telegram</a></p>
+  </div>
+
+  <h2 style="text-align:center; margin-top:8px;">📊 Advies-tabblad</h2>
+  <p id="last-update" class="last-update" style="display:none;"></p>
+
+  <div class="table-wrapper" id="excel-data">Bezig met laden...</div>
+
+  <script>
+    async function loadExcel() {
+      try {
+        const response = await fetch("data/Advies.xlsx", { cache: "no-store" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+
+        // Pak de eerste sheet
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        // Detecteer timestamp in A1 (\"Laatst bijgewerkt: ...\")
+        let headerRowIndex = 0;
+        const firstCell = rows?.[0]?.[0] ? String(rows[0][0]) : "";
+        if (firstCell.toLowerCase().startsWith("laatst bijgewerkt")) {
+          const lu = document.getElementById("last-update");
+          lu.textContent = firstCell;
+          lu.style.display = "inline-block";
+          headerRowIndex = 1; // headers staan dan op de tweede rij
+        }
+
+        // Bouw tabel
+        const headers = rows[headerRowIndex] || [];
+        let html = "<table><thead><tr>";
+        headers.forEach(col => html += `<th>${col ?? ""}</th>`);
+        html += "</tr></thead><tbody>";
+
+        for (let i = headerRowIndex + 1; i < rows.length; i++) {
+          const r = rows[i] || [];
+          html += "<tr>";
+          for (let j = 0; j < headers.length; j++) {
+            const cell = r[j];
+            if (typeof cell === "string" && cell.startsWith("http")) {
+              html += `<td><a class="link-btn" href="${cell}" target="_blank" rel="noopener">Open link</a></td>`;
+            } else {
+              html += `<td>${cell ?? ""}</td>`;
+            }
+          }
+          html += "</tr>";
+        }
+        html += "</tbody></table>";
+        document.getElementById("excel-data").innerHTML = html;
+      } catch (err) {
+        document.getElementById("excel-data").innerText = "❌ Fout bij laden van Excel: " + err;
+      }
+    }
+    loadExcel();
+  </script>
+</body>
+</html>
