@@ -37,7 +37,7 @@ def process_file():
             repo.git.add(all=True)
             if repo.is_dirty(untracked_files=True):
                 repo.index.commit("Update advies-tabblad + timestamp in A1")
-                print("📝 Commit gemaakt.")
+                print(" Commit gemaakt.")
             else:
                 print(" Geen wijzigingen om te committen.")
             origin = repo.remote(name="origin")
@@ -48,7 +48,7 @@ def process_file():
         except Exception as e:
             print(f" Poging {attempt}/30 mislukt: {e}")
             if attempt < 30:
-                print("⏳ Wachten 20 sec en opnieuw proberen...")
+                print(" Wachten 20 sec en opnieuw proberen...")
                 time.sleep(20)
             else:
                 print(" Bestand bleef onbereikbaar. Stop na 30 pogingen.")
