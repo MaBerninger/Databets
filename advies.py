@@ -30,7 +30,7 @@ def process_file():
 
             # Schrijf output
             out_df.to_excel(FILE_TARGET, sheet_name="Advies", index=False)
-            print(f"✅ Tabblad 'Advies' gekopieerd en timestamp gezet: {ts_text}")
+            print(f" Tabblad 'Advies' gekopieerd en timestamp gezet: {ts_text}")
 
             # Git commit + push
             repo = git.Repo(LOCAL_REPO)
@@ -39,25 +39,25 @@ def process_file():
                 repo.index.commit("Update advies-tabblad + timestamp in A1")
                 print("📝 Commit gemaakt.")
             else:
-                print("ℹ️ Geen wijzigingen om te committen.")
+                print(" Geen wijzigingen om te committen.")
             origin = repo.remote(name="origin")
             origin.push(refspec="HEAD:refs/heads/main")
-            print("🚀 Tabblad 'Advies' succesvol naar GitHub gepusht!")
-            return  # ✅ Gelukt, stop met retryen
+            print(" Tabblad 'Advies' succesvol naar GitHub gepusht!")
+            return  #  Gelukt, stop met retryen
 
         except Exception as e:
-            print(f"⚠️ Poging {attempt}/30 mislukt: {e}")
+            print(f" Poging {attempt}/30 mislukt: {e}")
             if attempt < 30:
                 print("⏳ Wachten 20 sec en opnieuw proberen...")
                 time.sleep(20)
             else:
-                print("❌ Bestand bleef onbereikbaar. Stop na 30 pogingen.")
+                print(" Bestand bleef onbereikbaar. Stop na 30 pogingen.")
                 return
 
 def main():
     while True:
         process_file()
-        print("⏳ Wachten 2 minuten tot volgende run...")
+        print(" Wachten 2 minuten tot volgende run...")
         time.sleep(120)  # 2 minuten
 
 if __name__ == "__main__":
