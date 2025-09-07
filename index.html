@@ -333,9 +333,19 @@
   bm1Index = bmIndices[0] ?? -1;
   bm2Index = bmIndices[1] ?? -1;
 
+  // Bepaal de indices waar de header "odd" bevat (voor odds)
+  const oddIndices = [];
+  headers.forEach((colName, idx) => {
+    if (colName && colName.toString().toLowerCase().includes('odd')) {
+      oddIndices.push(idx);
+    }
+  });
+
   // Bouw tabel en verzamel unieke namen uit alle gevonden kolommen
   let html = "<table><thead><tr>";
   headers.forEach(col => html += `<th>${col ?? ""}</th>`);
+  // Voeg een extra kop voor de odd calculator
+  html += "<th>Odd Calculator</th>";
   html += "</tr></thead><tbody>";
 
   const bookmakerSet = new Set();
@@ -355,6 +365,7 @@
     // Gebruik de eerste twee namen (of lege string) voor data-attributen
     const bm1 = bmNames[0] ?? "";
     const bm2 = bmNames[1] ?? "";
+
     html += `<tr data-bm1="${bm1.replace(/"/g,'&quot;')}" data-bm2="${bm2.replace(/"/g,'&quot;')}">`;
     for (let j = 0; j < headers.length; j++) {
       const cell = r[j];
@@ -364,6 +375,42 @@
         html += `<td>${cell ?? ""}</td>`;
       }
     }
+
+    // Zoek odd waarden op basis van de geselecteerde indices
+    const oddValues = [];
+    oddIndices.forEach(idx => {
+      const val = r[idx];
+      if (val !== undefined && val !== null) {
+        const str = val.toString().replace(',', '.');
+        const num = parseFloat(str);
+        if (!isNaN(num)) oddValues.push(num);
+      }
+    });
+    // Verzamel link kolommen (URL's) in deze rij
+    const linkValues = [];
+    for (let c of r) {
+      if (typeof c === 'string' && c.startsWith('http')) {
+        linkValues.push(c);
+      }
+    }
+    // Voeg de calculator link toe indien we ten minste 2 bookmakers en 2 odds hebben
+    let calcLink = '';
+    if (bmNames.length >= 2 && oddValues.length >= 2) {
+      const odd1 = oddValues[0];
+      const odd2 = oddValues[1];
+      const link1 = linkValues[0] ?? '';
+      const link2 = linkValues[1] ?? '';
+      const qs = new URLSearchParams({
+        bm1: bm1,
+        bm2: bm2,
+        odd1: odd1,
+        odd2: odd2,
+        link1: link1,
+        link2: link2
+      }).toString();
+      calcLink = `<a class="link-btn" href="oddcalculator.html?${qs}" target="_blank" rel="noopener">Odd Calculator</a>`;
+    }
+    html += `<td>${calcLink}</td>`;
     html += "</tr>";
   }
   html += "</tbody></table>";

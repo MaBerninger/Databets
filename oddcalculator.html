@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Odd Calculator</title>
+  <style>
+    :root {
+      --brand: #0088cc;
+      --bg: #f9f9f9;
+      --ink: #333;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 30px;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--ink);
+    }
+    a {
+      color: var(--brand);
+    }
+    h1, h2, h3 {
+      margin-top: 0.5em;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+    }
+    .calc-section {
+      margin-top: 20px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="range"] {
+      width: 100%;
+      margin: 8px 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: var(--brand);
+      color: #fff;
+    }
+    tr:nth-child(even) { background-color: #f2f8fc; }
+    tr:hover { background-color: #e6f2f8; }
+    .muted {
+      color: #637;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .radio-group label {
+      display: inline-block;
+      margin-right: 16px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Odd Calculator</h1>
+    <div id="event-info">
+      <h2 id="match-title"></h2>
+      <p id="bookmakers"></p>
+    </div>
+    <div class="calc-section">
+      <label for="total">Totale inzet (per 5 euro): <span id="totalDisplay"></span> €</label>
+      <input type="range" id="total" min="10" max="300" step="5" value="50" />
+    </div>
+    <div class="calc-section radio-group">
+      <label>Methode:</label>
+      <label><input type="radio" name="calcMode" value="spread" checked /> Spreiden (Surebet)</label>
+      <label><input type="radio" name="calcMode" value="hedge" /> Maximale winst (Hedge)</label>
+    </div>
+    <div class="calc-section">
+      <h3>Resultaten</h3>
+      <div id="results"></div>
+    </div>
+  </div>
+  <script>
+    // Parse query parameters
+    const params = new URLSearchParams(window.location.search);
+    const bm1 = params.get('bm1') || 'Bookmaker 1';
+    const bm2 = params.get('bm2') || 'Bookmaker 2';
+    const odd1 = parseFloat(params.get('odd1'));
+    const odd2 = parseFloat(params.get('odd2'));
+    const link1 = params.get('link1') || '';
+    const link2 = params.get('link2') || '';
+
+    // Vul basisinformatie in
+    document.getElementById('match-title').textContent = `${bm1} vs ${bm2}`;
+    const infoParts = [];
+    infoParts.push(`<strong>${bm1}</strong>: odd ${isNaN(odd1) ? '-' : odd1}${link1 ? ` (<a href="${link1}" target="_blank" rel="noopener">open</a>)` : ''}`);
+    infoParts.push(`<strong>${bm2}</strong>: odd ${isNaN(odd2) ? '-' : odd2}${link2 ? ` (<a href="${link2}" target="_blank" rel="noopener">open</a>)` : ''}`);
+    document.getElementById('bookmakers').innerHTML = infoParts.join('<br>');
+
+    const totalInput = document.getElementById('total');
+    const totalDisplay = document.getElementById('totalDisplay');
+    const modeInputs = document.getElementsByName('calcMode');
+
+    function compute(mode, total) {
+      let stake1_raw, stake2_raw, profitA_raw, profitB_raw;
+      const o1 = odd1;
+      const o2 = odd2;
+      if (!isFinite(o1) || !isFinite(o2)) {
+        return null;
+      }
+      if (mode === 'spread') {
+        // Verdeel zo dat de uitbetalingen gelijk zijn
+        stake1_raw = total * o2 / (o1 + o2);
+        stake2_raw = total * o1 / (o1 + o2);
+        // Bij een surebet gaat slechts één weddenschap winnen. De winst is uitbetaling minus totale inzet.
+        profitA_raw = stake1_raw * o1 - total;
+        profitB_raw = stake2_raw * o2 - total;
+      } else {
+        // Hedge: maximaliseer winst op de hoogste odd en zorg dat de laagste odd minstens break-even draait
+        if (o1 >= o2) {
+          // Odd van bm1 is hoger, odd van bm2 is lager
+          const stakeLow = total / o2;    // inzet op de lage odd zodat de uitbetaling gelijk is aan totale inzet
+          const stakeHigh = total - stakeLow;
+          stake1_raw = stakeHigh; // inzet op bm1 (hoge odd)
+          stake2_raw = stakeLow;  // inzet op bm2 (lage odd)
+          // Alleen de inzet op het winnende resultaat levert uitbetaling op
+          profitA_raw = stake1_raw * o1 - total;
+          profitB_raw = stake2_raw * o2 - total;
+        } else {
+          // Odd van bm2 is hoger, odd van bm1 is lager
+          const stakeLow = total / o1;
+          const stakeHigh = total - stakeLow;
+          stake1_raw = stakeLow;  // inzet op bm1 (lage odd)
+          stake2_raw = stakeHigh; // inzet op bm2 (hoge odd)
+          profitA_raw = stake1_raw * o1 - total;
+          profitB_raw = stake2_raw * o2 - total;
+        }
+      }
+      const stake1_round = Math.round(stake1_raw / 5) * 5;
+      const stake2_round = Math.round(stake2_raw / 5) * 5;
+      const total_round = stake1_round + stake2_round;
+      const profitA_round = stake1_round * o1 - total_round;
+      const profitB_round = stake2_round * o2 - total_round;
+      return {
+        stake1_raw, stake2_raw, profitA_raw, profitB_raw,
+        stake1_round, stake2_round, total_round, profitA_round, profitB_round
+      };
+    }
+
+    function render() {
+      const total = parseFloat(totalInput.value);
+      totalDisplay.textContent = total.toFixed(0);
+      let mode = 'spread';
+      modeInputs.forEach(inp => { if (inp.checked) mode = inp.value; });
+      const result = compute(mode, total);
+      if (!result) {
+        document.getElementById('results').innerHTML = '<p class="muted">Geen geldige odds beschikbaar.</p>';
+        return;
+      }
+      const {
+        stake1_raw, stake2_raw, profitA_raw, profitB_raw,
+        stake1_round, stake2_round, total_round, profitA_round, profitB_round
+      } = result;
+      let html = `<table><thead><tr><th></th><th>${bm1}</th><th>${bm2}</th></tr></thead><tbody>`;
+      html += `<tr><td>Inzet (exact)</td><td>€${stake1_raw.toFixed(2)}</td><td>€${stake2_raw.toFixed(2)}</td></tr>`;
+      html += `<tr><td>Inzet (afgerond op €5)</td><td>€${stake1_round.toFixed(2)}</td><td>€${stake2_round.toFixed(2)}</td></tr>`;
+      html += `<tr><td>Totale inzet</td><td colspan="2">€${total.toFixed(2)} (exact) vs €${total_round.toFixed(2)} (afgerond)</td></tr>`;
+      html += `<tr><td>Winst bij ${bm1}</td><td colspan="2">Exact: €${profitA_raw.toFixed(2)} (${total !== 0 ? (profitA_raw/total*100).toFixed(2) : '0.00'}%) &nbsp;&nbsp;|&nbsp;&nbsp;Afgerond: €${profitA_round.toFixed(2)} (${total_round !== 0 ? (profitA_round/total_round*100).toFixed(2) : '0.00'}%)</td></tr>`;
+      html += `<tr><td>Winst bij ${bm2}</td><td colspan="2">Exact: €${profitB_raw.toFixed(2)} (${total !== 0 ? (profitB_raw/total*100).toFixed(2) : '0.00'}%) &nbsp;&nbsp;|&nbsp;&nbsp;Afgerond: €${profitB_round.toFixed(2)} (${total_round !== 0 ? (profitB_round/total_round*100).toFixed(2) : '0.00'}%)</td></tr>`;
+      html += `</tbody></table>`;
+      if (mode === 'spread') {
+        html += '<p class="muted">Bij spreiden (surebet) worden de inzetten zo berekend dat de uitbetalingen gelijk zijn. Hierdoor ontstaat een gegarandeerde winst wanneer de som van de implied probabilities kleiner is dan 100%. Afronden op €5 kan je rendement beïnvloeden.</p>';
+      } else {
+        html += '<p class="muted">Bij hedge wordt de totale inzet zo verdeeld dat je op de uitkomst met de laagste odd break-even draait en op de hoogste odd extra rendement behaalt. Let op dat afronding per €5 invloed heeft op het uiteindelijke rendement.</p>';
+      }
+      document.getElementById('results').innerHTML = html;
+    }
+    totalInput.addEventListener('input', render);
+    modeInputs.forEach(inp => inp.addEventListener('change', render));
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
